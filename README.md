@@ -1,1 +1,1 @@
-# DL-From-Scratch-With-Julia
+# NN-From-Scratch-With-Julia
