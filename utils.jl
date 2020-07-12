@@ -36,7 +36,7 @@ end
     Make a linear forward calculation
 """
 function linear_forward(A, W, b)
-    Z = W*A .+ b
+    Z = (W * A) .+ b
     cache = (A, W, b)
 
     @assert size(Z) == (size(W, 1), size(A, 2))
@@ -74,20 +74,20 @@ end
 function forward_propagate_model_weights(DMatrix, parameters)
     master_cache = []
     A = DMatrix
-    L = length(parameters)/2
+    L = Int(length(parameters)/2)
 
-    for l = 1: (L-1)
-        A_pre = A
-        A, cache = linear_forward_activation(A_pre,
-                                             parameters[string("W_" , string(Int(l)))],
-                                             parameters[string("b_" , string(Int(l)))],
+    for l = 1 : (L-1)
+        A_prev = A
+        A, cache = linear_forward_activation(A_prev,
+                                             parameters[string("W_" , string(l))],
+                                             parameters[string("b_" , string(l))],
                                              "relu")
         push!(master_cache , cache)
     end
 
     Ŷ, cache = linear_forward_activation(A,
-                                         parameters[string("W_" , string(Int(L)))],
-                                         parameters[string("b_" , string(Int(L)))],
+                                         parameters[string("W_" , string(L))],
+                                         parameters[string("b_" , string(L))],
                                          "sigmoid")
     push!(master_cache , cache)
 
