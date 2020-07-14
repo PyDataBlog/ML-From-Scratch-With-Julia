@@ -4,6 +4,8 @@ using MLJBase
 using HDF5
 using Images
 using ImageView
+using Statistics
+
 
 """
     Sigmoid activation function
@@ -21,7 +23,6 @@ function relu(Z)
     A = max.(0,Z)
     return A, Z
 end
-
 
 
 """
@@ -108,7 +109,7 @@ end
 """
 function calculate_cost(Ŷ, Y)
     m = size(Y, 2)
-    cost = -sum(Y .* log.(Ŷ) + (1 .- Y) .* log.(1 .- Ŷ))/m
+    cost = -mean(Y .* log.(Ŷ) + (1 .- Y) .* log.(1 .- Ŷ))
     return cost
 end
 
@@ -216,8 +217,8 @@ function update_model_weights(parameters, ∇, η)
     L = Int(length(parameters)/2)
 
     for l = 0: (L-1)
-        parameters[string("W_" , string(l + 1))] -= η .* ∇[string("dW_" , string(l+1))]
-        parameters[string("b_", string(l + 1))] -= η .* ∇[string("db_",string(l+1))]
+        parameters[string("W_" , string(l + 1))] -= η .* ∇[string("dW_" , string(l + 1))]
+        parameters[string("b_", string(l + 1))] -= η .* ∇[string("db_",string(l + 1))]
     end
     return parameters
 end
@@ -228,14 +229,20 @@ end
 """
 function assess_accuracy(Ŷ , Y)
     @assert size(Ŷ) == size(Y)
-    return sum(Y .== Ŷ) / length(Y)
+    return sum((Ŷ .> 0.5) .== Y) / length(Y)
+end
+
+
+function check_accuracy(A_L , Y)
+    A_L = reshape(A_L , size(Y))
+    return sum((A_L .> 0.5) .== Y) / length(Y)
 end
 
 
 """
     Train the network
 """
-function train_network(layer_dims , DMatrix, Y,  η=0.01, max_iters=1000)
+function train_network(layer_dims , DMatrix, Y,  η=0.001, max_iters=1000)
     costs = []
     iters = []
     accuracy = []
@@ -247,15 +254,16 @@ function train_network(layer_dims , DMatrix, Y,  η=0.01, max_iters=1000)
 
         Ŷ , caches  = forward_propagate_model_weights(DMatrix, params)
         cost = calculate_cost(Ŷ , Y)
-        accuracy = assess_accuracy(Ŷ , Y)
+        acc = assess_accuracy(Ŷ , Y)
+        #acc = check_accuracy(Ŷ , Y)
         ∇  = back_propagate_model_weights(Ŷ , Y , caches)
         params = update_model_weights(params , ∇ , η)
 
-        println("Iteration -> $i, Cost -> $cost, Accuracy -> $accuracy .")
+        println("Iteration -> $i, Cost -> $cost, Accuracy -> $acc.")
 
         push!(iters , i)
         push!(costs , cost)
-        push!(accuracy , accuracy)
+        push!(accuracy , acc)
     end
         return (cost=costs, iterations=iters, accuracy=accuracy, parameters=params)
 end
@@ -295,7 +303,19 @@ end
 
 
 # Generate fake data
-X, y = make_blobs(100_000, 3; centers=3, as_table=false, rng=2020)
+X, y = make_blobs(10_000, 3; centers=2, as_table=false, rng=2020)
 X = Matrix(X')
-y = reshape(y, (1, 100_000))
+y = reshape(y, (1, 10_000))
 
+
+#url = "https://raw.githubusercontent.com/PyDataBlog/NN-From-Scratch-With-Julia/master/train_catvnoncat.h5";
+function replace_2(x)
+    if x == 2
+        return 0
+    else
+        return x
+    end
+end
+
+y2 = replace_2.(y)
+#train_network([3, 5, 3, 1], X, y2, 0.3, 300)
