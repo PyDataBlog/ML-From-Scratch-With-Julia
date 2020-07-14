@@ -1,3 +1,10 @@
+# Import libraries
+using Plots
+using MLJBase
+using HDF5
+using Images
+using ImageView
+
 """
     Sigmoid activation function
 """
@@ -24,8 +31,8 @@ function initialise_model_weights(layer_dims)
     params = Dict()
 
     for l=2:length(layer_dims)
-        params[string("W_" , string(l-1))] = rand(layer_dims[l] , layer_dims[l-1]) * 0.1
-        params[string("b_" , string(l-1))] = zeros(layer_dims[l] , 1)
+        params[string("W_" , string(l-1))] = rand(layer_dims[l], layer_dims[l-1]) * 0.1
+        params[string("b_" , string(l-1))] = zeros(layer_dims[l], 1)
     end
 
     return params
@@ -113,7 +120,7 @@ function sigmoid_backwards(∂A, activated_cache)
     s = sigmoid(activated_cache)[1]
     ∂Z = ∂A .* s .* (1 .- s)
 
-    @assert (size(∂Z) == size(activated_cache) )
+    @assert (size(∂Z) == size(activated_cache))
     return ∂Z
 end
 
@@ -143,7 +150,6 @@ function linear_backward(∂Z, cache)
 
     return ∂W , ∂b , ∂A_prev
 end
-
 
 
 """
@@ -210,10 +216,8 @@ function update_model_weights(parameters, ∇, η)
     L = Int(length(parameters)/2)
 
     for l = 0: (L-1)
-
         parameters[string("W_" , string(l + 1))] -= η .* ∇[string("dW_" , string(l+1))]
         parameters[string("b_", string(l + 1))] -= η .* ∇[string("db_",string(l+1))]
-
     end
     return parameters
 end
@@ -247,7 +251,7 @@ function train_network(layer_dims , DMatrix, Y,  η=0.01, max_iters=1000)
         ∇  = back_propagate_model_weights(Ŷ , Y , caches)
         params = update_model_weights(params , ∇ , η)
 
-        println("Iteration -> $i, Cost -> $cost, Accuracy -> $accuracy")
+        println("Iteration -> $i, Cost -> $cost, Accuracy -> $accuracy .")
 
         push!(iters , i)
         push!(costs , cost)
@@ -264,4 +268,34 @@ function predict(DMatrix, parameters)
     Ŷ , _  = forward_propagate_model_weights(DMatrix, parameters)
     return Ŷ
 end
+
+
+"""
+    Function to load flattened toy data to test the implementation.
+"""
+function load_data()
+    X_train = Float64.(h5read("train_catvnoncat.h5", "train_set_x"))
+    #X_train = reshape(X_train, :, size(X_train, 4))
+
+    y_train = Int64.(h5read("train_catvnoncat.h5", "train_set_y"))
+    #y_train = reshape(y_train, (1, size(y_train, 1)))
+
+    X_test = Float64.(h5read("test_catvnoncat.h5", "test_set_x"))
+    #X_test = reshape(X_test, :, size(X_test, 4))
+
+    y_test = Int64.(h5read("test_catvnoncat.h5", "test_set_y"))
+    #y_test = reshape(y_test, (1, size(y_test, 1)))
+
+    categories = h5read("test_catvnoncat.h5", "list_classes")
+
+    return (TrainingInputs = X_train, ValidationInputs = X_test,
+            TrainTarget = y_train, ValidationTarget = y_test,
+            categories = categories)
+end
+
+
+# Generate fake data
+X, y = make_blobs(100_000, 3; centers=3, as_table=false, rng=2020)
+X = Matrix(X')
+y = reshape(y, (1, 100_000))
 
