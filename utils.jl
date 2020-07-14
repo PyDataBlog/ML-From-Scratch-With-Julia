@@ -231,12 +231,12 @@ end
 """
     Train the network
 """
-function train_network(layers_dimensions , DMatrix, Y,  η=0.01, max_iters=1000)
+function train_network(layer_dims , DMatrix, Y,  η=0.01, max_iters=1000)
     costs = []
     iters = []
     accuracy = []
 
-    params = initialise_model_weights(layers_dimensions)
+    params = initialise_model_weights(layer_dims)
 
 
     for i = 1:max_iters
@@ -257,10 +257,11 @@ function train_network(layers_dimensions , DMatrix, Y,  η=0.01, max_iters=1000)
 end
 
 
-
 """
+    Make predictions on new data using the trained paramaters
 """
 function predict(DMatrix, parameters)
-
+    Ŷ , _  = forward_propagate_model_weights(DMatrix, parameters)
+    return Ŷ
 end
 
