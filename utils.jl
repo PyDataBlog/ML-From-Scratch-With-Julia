@@ -233,12 +233,6 @@ function assess_accuracy(Ŷ , Y)
 end
 
 
-function check_accuracy(A_L , Y)
-    A_L = reshape(A_L , size(Y))
-    return sum((A_L .> 0.5) .== Y) / length(Y)
-end
-
-
 """
     Train the network
 """
@@ -255,7 +249,6 @@ function train_network(layer_dims , DMatrix, Y,  η=0.001, max_iters=1000)
         Ŷ , caches  = forward_propagate_model_weights(DMatrix, params)
         cost = calculate_cost(Ŷ , Y)
         acc = assess_accuracy(Ŷ , Y)
-        #acc = check_accuracy(Ŷ , Y)
         ∇  = back_propagate_model_weights(Ŷ , Y , caches)
         params = update_model_weights(params , ∇ , η)
 
@@ -309,13 +302,7 @@ y = reshape(y, (1, 10_000))
 
 
 #url = "https://raw.githubusercontent.com/PyDataBlog/NN-From-Scratch-With-Julia/master/train_catvnoncat.h5";
-function replace_2(x)
-    if x == 2
-        return 0
-    else
-        return x
-    end
-end
+f(x) =  x == 2 ? 0 : x
 
-y2 = replace_2.(y)
+y2 = f.(y)
 #train_network([3, 5, 3, 1], X, y2, 0.3, 300)
