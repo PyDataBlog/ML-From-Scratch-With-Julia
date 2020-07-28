@@ -1,11 +1,11 @@
+include("main.jl")
+
 using HDF5
 using Images
 using ImageView
 using Plots
 using MLJBase
 
-
-include("main.jl")
 
 """
     Function to load flattened toy data to test the implementation.
@@ -51,4 +51,4 @@ y2 = f.(y);
 # Input dimensions
 input_dim = size(X, 1);
 
-train_network([input_dim, 5, 3, 1], X, y2; η=0.3, epochs=50, seed=1, verbose=true);
+train_network([input_dim, 5, 3, 1], X, y2; η=0.01, epochs=50, seed=1, verbose=true);

@@ -26,9 +26,10 @@ end
 function initialise_model_weights(layer_dims, seed)
     params = Dict()
 
+    # Build a dictionary of initialised weights and bias units
     for l=2:length(layer_dims)
-        params[string("W_" , string(l-1))] = rand(StableRNG(seed), layer_dims[l], layer_dims[l-1]) * 0.1
-        params[string("b_" , string(l-1))] = zeros(layer_dims[l], 1)
+        params[string("W_", string(l-1))] = rand(StableRNG(seed), layer_dims[l], layer_dims[l-1]) * sqrt(2 / layer_dims[l-1])
+        params[string("b_", string(l-1))] = zeros(layer_dims[l], 1)
     end
 
     return params
@@ -39,6 +40,7 @@ end
     Make a linear forward calculation
 """
 function linear_forward(A, W, b)
+    # Make a linear forward and return inputs as cache
     Z = (W * A) .+ b
     cache = (A, W, b)
 
@@ -62,6 +64,7 @@ function linear_forward_activation(A_prev, W, b, activation_function="relu")
     if activation_function == "relu"
         A, activation_cache = relu(Z)
     end
+
     cache = (linear_step_cache=linear_cache, activation_step_cache=activation_cache)
 
     @assert size(A) == (size(W, 1), size(A_prev, 2))
@@ -76,20 +79,20 @@ end
 function forward_propagate_model_weights(DMatrix, parameters)
     master_cache = []
     A = DMatrix
-    L = Int(length(parameters)/2)
+    L = Int(length(parameters) / 2)
 
     for l = 1 : (L-1)
         A_prev = A
         A, cache = linear_forward_activation(A_prev,
-                                             parameters[string("W_" , string(l))],
-                                             parameters[string("b_" , string(l))],
+                                             parameters[string("W_", string(l))],
+                                             parameters[string("b_", string(l))],
                                              "relu")
         push!(master_cache , cache)
     end
 
     Ŷ, cache = linear_forward_activation(A,
-                                         parameters[string("W_" , string(L))],
-                                         parameters[string("b_" , string(L))],
+                                         parameters[string("W_", string(L))],
+                                         parameters[string("b_", string(L))],
                                          "sigmoid")
     push!(master_cache , cache)
 
@@ -99,7 +102,7 @@ end
 
 
 """
-    Computes the batch cost of the current predictions.
+    Computes the log loss of the current predictions.
 """
 function calculate_cost(Ŷ, Y)
     m = size(Y, 2)
@@ -208,7 +211,7 @@ end
 """
 function update_model_weights(parameters, ∇, η)
 
-    L = Int(length(parameters)/2)
+    L = Int(length(parameters) / 2)
 
     for l = 0: (L-1)
         parameters[string("W_" , string(l + 1))] -= η .* ∇[string("∂W_" , string(l + 1))]
@@ -220,7 +223,7 @@ end
 
 
 """
-    Check the accuracy between predicted values and the true values.
+    Check the accuracy between predicted values (Ŷ) and the true values(Y).
 """
 function assess_accuracy(Ŷ , Y)
     @assert size(Ŷ) == size(Y)
@@ -240,14 +243,13 @@ function train_network(layer_dims , DMatrix, Y;  η=0.001, epochs=1000, seed=202
 
     params = initialise_model_weights(layer_dims, seed)
 
-
     for i = 1:epochs
 
         Ŷ , caches  = forward_propagate_model_weights(DMatrix, params)
-        cost = calculate_cost(Ŷ , Y)
-        acc = assess_accuracy(Ŷ , Y)
-        ∇  = back_propagate_model_weights(Ŷ , Y , caches)
-        params = update_model_weights(params , ∇ , η)
+        cost = calculate_cost(Ŷ, Y)
+        acc = assess_accuracy(Ŷ, Y)
+        ∇  = back_propagate_model_weights(Ŷ, Y, caches)
+        params = update_model_weights(params, ∇, η)
 
         if verbose
             println("Iteration -> $i, Cost -> $cost, Accuracy -> $acc")
