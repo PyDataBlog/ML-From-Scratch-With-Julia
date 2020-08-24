@@ -7,7 +7,7 @@ using StableRNGs
 """
 function sigmoid(Z)
     A = 1 ./ (1 .+ exp.(.-Z))
-    return A, Z
+    return (A = A, Z = Z)
 end
 
 
@@ -16,7 +16,7 @@ end
 """
 function relu(Z)
     A = max.(0, Z)
-    return A, Z
+    return (A = A, Z = Z)
 end
 
 
@@ -28,8 +28,8 @@ function initialise_model_weights(layer_dims, seed)
 
     # Build a dictionary of initialised weights and bias units
     for l=2:length(layer_dims)
-        params[string("W_", string(l-1))] = rand(StableRNG(seed), layer_dims[l], layer_dims[l-1]) * sqrt(2 / layer_dims[l-1])
-        params[string("b_", string(l-1))] = zeros(layer_dims[l], 1)
+        params[string("W_", (l-1))] = rand(StableRNG(seed), layer_dims[l], layer_dims[l-1]) * sqrt(2 / layer_dims[l-1])
+        params[string("b_", (l-1))] = zeros(layer_dims[l], 1)
     end
 
     return params
@@ -46,7 +46,7 @@ function linear_forward(A, W, b)
 
     @assert size(Z) == (size(W, 1), size(A, 2))
 
-    return Z, cache
+    return (Z = Z, cache = cache)
 end
 
 
@@ -84,20 +84,19 @@ function forward_propagate_model_weights(DMatrix, parameters)
     for l = 1 : (L-1)
         A_prev = A
         A, cache = linear_forward_activation(A_prev,
-                                             parameters[string("W_", string(l))],
-                                             parameters[string("b_", string(l))],
+                                             parameters[string("W_", (l))],
+                                             parameters[string("b_", (l))],
                                              "relu")
         push!(master_cache , cache)
     end
 
     Ŷ, cache = linear_forward_activation(A,
-                                         parameters[string("W_", string(L))],
-                                         parameters[string("b_", string(L))],
+                                         parameters[string("W_", (L))],
+                                         parameters[string("b_", (L))],
                                          "sigmoid")
     push!(master_cache , cache)
 
     return Ŷ, master_cache
-
 end
 
 
@@ -115,7 +114,7 @@ end
     Derivative of the Sigmoid function.
 """
 function sigmoid_backwards(∂A, activated_cache)
-    s = sigmoid(activated_cache)[1]
+    s = sigmoid(activated_cache).A
     ∂Z = ∂A .* s .* (1 .- s)
 
     @assert (size(∂Z) == size(activated_cache))
@@ -189,16 +188,14 @@ function back_propagate_model_weights(Ŷ, Y, master_cache)
     ∂Ŷ = (-(Y ./ Ŷ) .+ ((1 .- Y) ./ ( 1 .- Ŷ)))
     current_cache = master_cache[L]
 
-    ∇[string("∂W_", string(L))], ∇[string("∂b_", string(L))], ∇[string("∂A_", string(L-1))] = linear_activation_backward(∂Ŷ,
-                                                                                                                         current_cache,
-                                                                                                                        "sigmoid")
+    ∇[string("∂W_", (L))], ∇[string("∂b_", (L))], ∇[string("∂A_", (L-1))] = linear_activation_backward(∂Ŷ,
+                                                                                                       current_cache,
+                                                                                                       "sigmoid")
     for l=reverse(0:L-2)
         current_cache = master_cache[l+1]
-
-        ∇[string("∂W_", string(l+1))], ∇[string("∂b_", string(l+1))], ∇[string("∂A_", string(l))] = linear_activation_backward(
-                                                                                                                ∇[string("∂A_", string(l+1))],
-                                                                                                                current_cache,
-                                                                                                                "relu")
+        ∇[string("∂W_", (l+1))], ∇[string("∂b_", (l+1))], ∇[string("∂A_", (l))] = linear_activation_backward(∇[string("∂A_", (l+1))],
+                                                                                                             current_cache,
+                                                                                                             "relu")
     end
 
     return ∇
@@ -214,8 +211,8 @@ function update_model_weights(parameters, ∇, η)
     L = Int(length(parameters) / 2)
 
     for l = 0: (L-1)
-        parameters[string("W_" , string(l + 1))] -= η .* ∇[string("∂W_" , string(l + 1))]
-        parameters[string("b_", string(l + 1))] -= η .* ∇[string("∂b_",string(l + 1))]
+        parameters[string("W_", (l + 1))] -= η .* ∇[string("∂W_", (l + 1))]
+        parameters[string("b_", (l + 1))] -= η .* ∇[string("∂b_", (l + 1))]
     end
 
     return parameters
@@ -236,7 +233,7 @@ end
     matches the training inputs (DMatrix) and their corresponding ouptuts(Y)
     over some number of iterations (epochs) and a learning rate (η).
 """
-function train_network(layer_dims , DMatrix, Y;  η=0.001, epochs=1000, seed=2020, verbose=true)
+function train_network(layer_dims , DMatrix, Y;  η = 0.001, epochs = 1000, seed = 2020, verbose = true)
     costs = []
     iters = []
     accuracy = []
@@ -261,5 +258,3 @@ function train_network(layer_dims , DMatrix, Y;  η=0.001, epochs=1000, seed=202
     end
         return (cost = costs, iterations = iters, accuracy = accuracy, parameters = params)
 end
-
-

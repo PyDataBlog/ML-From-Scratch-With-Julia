@@ -31,6 +31,9 @@ function load_data()
 end
 
 
+data = load_data()
+reshape(data.TrainingInputs, :, size(data.TrainingInputs, 4))
+
 """
     Make predictions on new data using the trained paramaters
 """
