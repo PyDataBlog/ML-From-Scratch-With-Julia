@@ -54,4 +54,5 @@ y2 = f.(y);
 # Input dimensions
 input_dim = size(X, 1);
 
-train_network([input_dim, 5, 3, 1], X, y2; η=0.01, epochs=50, seed=1, verbose=true);
+
+nn_results = train_network([input_dim, 5, 3, 1], X, y2; η=0.01, epochs=50, seed=1, verbose=true);

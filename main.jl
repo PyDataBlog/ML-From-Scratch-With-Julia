@@ -156,7 +156,7 @@ end
 
 
 """
-    Forward the design matrix through the network layers using the parameters.
+    Unpack the linear activated caches and compute their derivatives.
 """
 function linear_activation_backward(∂A, cache, activation_function="relu")
     @assert activation_function ∈ ("sigmoid", "relu")
