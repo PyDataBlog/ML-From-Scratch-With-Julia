@@ -81,6 +81,7 @@ function forward_propagate_model_weights(DMatrix, parameters)
     A = DMatrix
     L = Int(length(parameters) / 2)
 
+    # Forward propagate until the last (output) layer
     for l = 1 : (L-1)
         A_prev = A
         A, cache = linear_forward_activation(A_prev,
@@ -90,6 +91,7 @@ function forward_propagate_model_weights(DMatrix, parameters)
         push!(master_cache , cache)
     end
 
+    # Make predictions in the output layer
     Ŷ, cache = linear_forward_activation(A,
                                          parameters[string("W_", (L))],
                                          parameters[string("b_", (L))],
@@ -101,7 +103,7 @@ end
 
 
 """
-    Computes the log loss of the current predictions.
+    Computes the log loss (binary cross entropy) of the current predictions.
 """
 function calculate_cost(Ŷ, Y)
     m = size(Y, 2)
@@ -137,12 +139,15 @@ end
 
 
 """
-    Partial derivatives of the linear forward function.
+    Partial derivatives of the components of linear forward function
+    using the linear output (∂Z) and caches of these components (cache).
 """
 function linear_backward(∂Z, cache)
+    # Unpack cache
     A_prev , W , b = cache
     m = size(A_prev, 2)
 
+    # Partial derivates of each of the components
     ∂W = ∂Z * (A_prev') / m
     ∂b = sum(∂Z, dims = 2) / m
     ∂A_prev = (W') * ∂Z
@@ -156,7 +161,8 @@ end
 
 
 """
-    Unpack the linear activated caches and compute their derivatives.
+    Unpack the linear activated caches (cache) and compute their derivatives
+    from the applied activation function.
 """
 function linear_activation_backward(∂A, cache, activation_function="relu")
     @assert activation_function ∈ ("sigmoid", "relu")
@@ -180,23 +186,25 @@ end
 
 
 """
-    Compute the gradients (∇) of the parameters of the constructed model
-    with respect to the cost of predictions.
+    Compute the gradients (∇) of the parameters (master_cache) of the constructed model
+    with respect to the cost of predictions (Ŷ) in comparison with actual output (Y).
 """
 function back_propagate_model_weights(Ŷ, Y, master_cache)
+    # Initiate the dictionary to store the gradients for all the components in each layer
     ∇ = Dict()
 
     L = length(master_cache)
-
-    m = size(Ŷ, 2)
     Y = reshape(Y , size(Ŷ))
 
+    # Partial derivative of the output layer
     ∂Ŷ = (-(Y ./ Ŷ) .+ ((1 .- Y) ./ ( 1 .- Ŷ)))
     current_cache = master_cache[L]
 
+    # Backpropagate on the layer preceeding the output layer
     ∇[string("∂W_", (L))], ∇[string("∂b_", (L))], ∇[string("∂A_", (L-1))] = linear_activation_backward(∂Ŷ,
                                                                                                        current_cache,
                                                                                                        "sigmoid")
+    # Go backwards in the layers and compute the partial derivates of each component.
     for l=reverse(0:L-2)
         current_cache = master_cache[l+1]
         ∇[string("∂W_", (l+1))], ∇[string("∂b_", (l+1))], ∇[string("∂A_", (l))] = linear_activation_backward(∇[string("∂A_", (l+1))],
@@ -204,6 +212,7 @@ function back_propagate_model_weights(Ŷ, Y, master_cache)
                                                                                                              "relu")
     end
 
+    # Return the gradients of the network
     return ∇
 end
 
@@ -216,6 +225,7 @@ function update_model_weights(parameters, ∇, η)
 
     L = Int(length(parameters) / 2)
 
+    # Update the parameters (weights and biases) for all the layers
     for l = 0: (L-1)
         parameters[string("W_", (l + 1))] -= η .* ∇[string("∂W_", (l + 1))]
         parameters[string("b_", (l + 1))] -= η .* ∇[string("∂b_", (l + 1))]
@@ -239,13 +249,16 @@ end
     matches the training inputs (DMatrix) and their corresponding ouptuts(Y)
     over some number of iterations (epochs) and a learning rate (η).
 """
-function train_network(layer_dims , DMatrix, Y;  η = 0.001, epochs = 1000, seed = 2020, verbose = true)
+function train_network(layer_dims , DMatrix, Y;  η=0.001, epochs=1000, seed=2020, verbose=true)
+    # Initiate an empty container for cost, iterations, and accuracy at each iteration
     costs = []
     iters = []
     accuracy = []
 
+    # Initialise random weights for the network
     params = initialise_model_weights(layer_dims, seed)
 
+    # Train the network
     for i = 1:epochs
 
         Ŷ , caches  = forward_propagate_model_weights(DMatrix, params)
@@ -258,6 +271,7 @@ function train_network(layer_dims , DMatrix, Y;  η = 0.001, epochs = 1000, seed
             println("Iteration -> $i, Cost -> $cost, Accuracy -> $acc")
         end
 
+        # Update containers for cost, iterations, and accuracy at the current iteration (epoch)
         push!(iters , i)
         push!(costs , cost)
         push!(accuracy , acc)
